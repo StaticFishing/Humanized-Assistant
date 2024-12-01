@@ -3,6 +3,8 @@ from transformers import BertTokenizer, BertForSequenceClassification
 import torch.nn.functional as F
 import json
 import openai
+import time
+
 
 
 # 加载保存的模型和分词器
@@ -56,73 +58,89 @@ def predict(text, model, tokenizer, device, k=64):
 
         return top_k_indices, top_k_probs
 
+def screening(text,emotion):
+    top_k_indices, top_k_probs = predict(text, model, tokenizer, device, k=TOP_K)
+    top_k_indices = zip(top_k_indices, top_k_probs)
+    final_answer = []
+    for k, v in top_k_indices:
+        if properties[int(k)] in emotion:
+            final_answer.append((v,k))
+
+        final_answer = final_answer[:3]
+    return final_answer
+
 label_mapping = load_label_mapping()
 
-properties = {}
-
+properties = {} # 筛掉和语义相反的emoji
 with open("motion.json", "r", encoding="utf-8") as f:
     motion = json.load(f)
     for k, v in motion.items():
         properties[int(k)] = v
 
-# 测试示例
+
 label_mapping_inv = {k: v for k, v in label_mapping.items()}  # 反转标签映射
 
 print(label_mapping_inv)
 
-# optional; defaults to `os.environ['OPENAI_API_KEY']`
+# api-key
 openai.api_key = "sk-M4incZE8MEAoNTWw98Df5b0c2c6f4bC19d566bFc37A21914"
 
-# all client options can be configured just like the `OpenAI` instantiation counterpart
+# openai的配置
 openai.base_url = "https://free.v36.cm/v1/"
 openai.default_headers = {"x-foo": "true"}
 
+# 初始化上下文历史和系统消息
 conversation_history = [
     {"role": "system", "content": "你是一个友好的助手，回答问题时严格按照用户要求的格式输出。"},
-    # {"role": "system", "content": "请用以下json格式输出：\n- 第一行：语气\n- 第二行：积极，消极，中性选一个词\n你的回答：你的回答在这里"},
-    {"role": "system", "content": "请用以下json格式输出：{语气:一种语气 , 标签: 积极,中性,消极其中一个 , 回答: 你的回答}"},
-    {"role": "system", "content": "你的回答中不需要加双引号"},
-                        ]
-print("ChatGPT 已启动！输入 '退出' 以结束对话。\n")
+    {"role": "system", "content": "请用以下json格式输出：{语气: 一种语气 , 标签: 积极,中性,消极其中一个 , 回答: 你的回答}"},
+    {"role": "system", "content": "要记得加双引号"},
+]
+
+MAX_HISTORY = 6  # 最大对话轮数限制
+
+print("ChatGPT 已启动！输入 'q' 以结束对话。\n")
 
 while True:
+    # 获取用户输入
     text = input("Input：")
-    if text == "q":
+    if text.strip().lower() == "q":
+        print("对话已结束。")
         break
 
+    # 更新对话历史
     conversation_history.append({"role": "user", "content": text})
-    # 输出预测结果
-    try:
-        completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=conversation_history,
-        )
-    except Exception as e:
-        print(f"请求失败: {e}")
+    conversation_history = conversation_history[-MAX_HISTORY:]  # 限制对话长度
+
+    # 调用 OpenAI API 获取模型回复
+    retry_attempts = 3
+    for attempt in range(retry_attempts):
+        try:
+            completion = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=conversation_history,
+            )
+            assistant_reply = completion.choices[0].message.content
+            break  # 如果请求成功，退出重试循环
+        except Exception as e:
+            print(f"请求失败: {e}")
+            if attempt < retry_attempts - 1:
+                print("正在重试...")
+                time.sleep(1)  # 等待1秒后重试
+            else:
+                print("多次尝试后请求失败，跳过本次输入。")
+                assistant_reply = None
+
+    if assistant_reply is None:
         continue
-
-    assistant_reply = completion.choices[0].message.content
-
-    print(assistant_reply)
-
-    # reply_split = assistant_reply.split('\n')
-    #
-    # top_k_indices, top_k_probs = predict(assistant_reply, model, tokenizer, device, k=TOP_K)
-    #
-    # top_k_indices = zip(top_k_indices, top_k_probs)
-    #
-    # final_answer = []
-    #
-    # for k, v in top_k_indices:
-    #     if properties[int(k)] in reply_split[1]:
-    #         final_answer.append((v,k))
-    #
-    # final_answer = final_answer[:3]
-    #
-    # print(reply_split)
-    # print("Top-{} Predictions:".format(TOP_K))
-    # for i, (prob, idx) in enumerate(final_answer):
-    #     try:
-    #         print(f"Rank {i + 1}:idx = {idx} Label = {label_mapping_inv[int(idx)]}, Probability = {prob:.4f}")
-    #     except KeyError as e:
-    #         print(f"KeyError encountered for index {int(idx)}: {e}")
+    # 确保输出符合 JSON 格式
+    try:
+        output = json.loads(assistant_reply.replace("\n", "").replace("“", "\"").replace("”", "\""))
+        if isinstance(output, dict) and all(key in output for key in ["语气", "标签", "回答"]):
+            emoji = screening(text,output['标签'])
+            for e in emoji:
+                print(label_mapping_inv[e[1]],end='')
+            print(output['回答'])
+        else:
+            print("模型返回的 JSON 不符合预期格式：", assistant_reply)
+    except json.JSONDecodeError:
+        print("解析 JSON 失败，模型返回的内容可能不符合格式：", assistant_reply)
