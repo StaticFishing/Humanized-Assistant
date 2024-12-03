@@ -10,7 +10,6 @@ MODEL_PATH = "bert_text_classification"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)  # 将模型转移到设备
 
@@ -152,5 +151,6 @@ while True:
     result += ''.join(map(str,result_moji))
     result += ''.join(map(str,result_text))
     print(result)
+
 
 
