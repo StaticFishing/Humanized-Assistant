@@ -137,6 +137,25 @@ openai.default_headers = {"x-foo": "true"}
 
 print("ChatGPT 已启动！输入 'q' 以结束对话。\n")
 
+
+
+
+
+def process_vocal():
+    ##传入一段语音，返回识别的情感、提取的文本
+    pass
+
+
+def process_result(dict):
+    ##返回生成的语音
+    pass
+
+
+
+
+
+
+
 while True:
     # 获取用户输入
     text = input("Input：")
