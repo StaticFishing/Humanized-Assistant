@@ -151,6 +151,3 @@ while True:
     result += ''.join(map(str,result_moji))
     result += ''.join(map(str,result_text))
     print(result)
-
-
-
