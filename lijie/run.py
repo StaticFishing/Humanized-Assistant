@@ -141,12 +141,13 @@ print("ChatGPT 已启动！输入 'q' 以结束对话。\n")
 
 
 
-def process_vocal():
+def process_vocal(vocal):
     ##传入一段语音，返回识别的情感、提取的文本
     pass
 
 
 def process_result(dict):
+    ##dict是词典格式 格式{"label":***,"text":***}
     ##返回生成的语音
     pass
 
