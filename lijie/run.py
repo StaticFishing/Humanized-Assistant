@@ -17,7 +17,7 @@ model.to(device)  # 将模型转移到设备
 MAX_LEN = 128
 TOP_K = 64  # 输出 Top-k 预测
 
-def load_label_mapping(file_path="idx_label_mapping.json"):
+def load_label_mapping(file_path="bert_text_classification/idx_label_mapping.json"):
     """
     加载保存的 idx_labels_mapping 文件
     """
@@ -119,7 +119,7 @@ def analyze_reply(assistant_reply):
 label_mapping = load_label_mapping()
 
 properties = {} # 筛掉和语义相反的emoji
-with open("motion.json", "r", encoding="utf-8") as f:
+with open("bert_text_classification/motion.json", "r", encoding="utf-8") as f:
     motion = json.load(f)
     for k, v in motion.items():
         properties[int(k)] = v
@@ -137,10 +137,6 @@ openai.default_headers = {"x-foo": "true"}
 
 print("ChatGPT 已启动！输入 'q' 以结束对话。\n")
 
-
-
-
-
 def process_vocal(vocal):
     ##传入一段语音，返回识别的情感、提取的文本
     pass
@@ -152,22 +148,15 @@ def process_result(dict):
     pass
 
 
-
-
-
-
-
-while True:
-    # 获取用户输入
-    text = input("Input：")
-    if text.strip().lower() == "q":
-        print("对话已结束。")
-        break
+def gpt_api(text):
     assistant_reply = ask_GPT(text)
     # print(assistant_reply)
     # {"语气": "", "标签": "", "回答": ""}回答的格式是这样的字典
     result_text, result_moji = analyze_reply(assistant_reply)
     result = ''
-    result += ''.join(map(str,result_moji))
-    result += ''.join(map(str,result_text))
+    result += ''.join(map(str, result_moji))
+    result += ''.join(map(str, result_text))
     print(result)
+    return result
+
+
