@@ -5,7 +5,6 @@ import json
 import openai
 import time
 
-
 # 加载保存的模型和分词器
 MODEL_PATH = "bert_text_classification"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
