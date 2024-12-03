@@ -70,6 +70,7 @@ conversation_history = [
     {"role": "system", "content": "你是一个友好的助手，回答问题时严格按照用户要求的格式输出。"},
     {"role": "system", "content": "请用以下json格式输出：{语气: 一种语气 , 标签: 积极,中性,消极其中一个 , 回答: 你的回答}"},
     {"role": "system", "content": "要记得加双引号"},
+    {"role": "system", "content": "用户输入的格式为{语气: 一种语气, 内容: 用户的输入}"}
 ]
 MAX_HISTORY = 6  # 最大对话轮数限制
 def ask_GPT(question):
@@ -139,14 +140,15 @@ print("ChatGPT 已启动！输入 'q' 以结束对话。\n")
 
 def process_vocal(vocal):
     ##传入一段语音，返回识别的情感、提取的文本
+    ##{语气: 一种语气, 内容: 用户的输入}
     pass
 
 
 def process_result(dict):
     ##dict是词典格式 格式{"label":***,"text":***}
     ##返回生成的语音
+    ##语音保存在./flask/uploads/audio.wav里
     pass
-
 
 def gpt_api(text):
     assistant_reply = ask_GPT(text)
@@ -159,4 +161,8 @@ def gpt_api(text):
     print(result)
     return result
 
+#-------------------------------------主程序--------------------------------------
+user_ask = process_vocal()
+gpt_answer = gpt_api(user_ask)
+process_result(gpt_answer)
 
