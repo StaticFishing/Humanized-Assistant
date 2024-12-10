@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>录音上传</title>
+</head>
+<body>
+    <h1>录音上传</h1>
+    <button id="startBtn">按住开始录音</button>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // 按住开始录音
+        document.getElementById("startBtn").addEventListener("mousedown", startRecording);
+
+        // 松开停止录音
+        document.getElementById("startBtn").addEventListener("mouseup", stopRecording);
+
+        // 取消默认的鼠标离开时停止
+        document.getElementById("startBtn").addEventListener("mouseleave", stopRecording);
+
+        async function startRecording() {
+            if (isRecording) return; // 如果已经在录音，直接返回
+
+            isRecording = true;
+            audioChunks = [];  // 清空之前的录音数据
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            if (!isRecording) return; // 如果没有在录音，直接返回
+            isRecording = false;
+            mediaRecorder.stop();
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+
+                // 上传录音到后端
+                uploadAudio(audioBlob);
+            };
+        }
+
+        function uploadAudio(blob) {
+            const formData = new FormData();
+            formData.append('audio', blob, 'audio.wav');
+
+            fetch('http://localhost:5000/uploads', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.audio_url) {
+                    // 自动播放返回的处理后音频
+                    playAudio(`http://localhost:5000/${data.audio_url}`);
+                } else {
+                    console.error("上传失败", data);
+                }
+            })
+            .catch(error => {
+                console.error("上传失败", error);
+            });
+        }
+
+        function playAudio(url) {
+            const audio = new Audio(url);
+            audio.play().catch(error => {
+                console.error("音频播放失败", error);
+            });
+        }
+    </script>
+</body>
+</html>
