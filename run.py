@@ -68,7 +68,7 @@ def screening(text,emotion):
 # 初始化上下文历史和系统消息
 conversation_history = [
     {"role": "system", "content": "你是一个友好的助手，回答问题时严格按照用户要求的格式输出。"},
-    {"role": "system", "content": "请用以下json格式输出：{语气: 一种语气 , 标签: 积极,中性,消极其中一个 , 回答: 你的回答}"},
+    {"role": "system", "content": "请用以下json格式输出：{语气: 你认为需要对我表达的语气（英语）, 标签: 积极,中性,消极其中一个 , 回答: 你的回答（中文）}"},
     {"role": "system", "content": "要记得加双引号"},
     {"role": "system", "content": "用户输入的格式为{语气: 一种语气, 内容: 用户的输入}"}
 ]
@@ -160,6 +160,8 @@ def gpt_api(text):
     result += ''.join(map(str, result_text))
     print(result)
     return result
+
+
 
 #-------------------------------------主程序--------------------------------------
 user_ask = process_vocal()
